@@ -26,12 +26,39 @@ public class HttpDispatcher {
 
 	private static final String DEFAULT_ROOT_PATH = "/webapp";
 
-	private Map<String, HttpHandler> getHandlers = new ConcurrentHashMap<String, HttpHandler>();
-	private Map<String, HttpHandler> postHandlers = new ConcurrentHashMap<String, HttpHandler>();
-	private Map<String, HttpHandler> putHandlers = new ConcurrentHashMap<String, HttpHandler>();
-	private Map<String, HttpHandler> deleteHandlers = new ConcurrentHashMap<String, HttpHandler>();
-	private Map<String, HttpHandler> headHandlers = new ConcurrentHashMap<String, HttpHandler>();
+	// Map<method, Map<path, handler>>
+	private Map<HttpMethod, Map<String, HttpHandler>> handlers = new ConcurrentHashMap<HttpMethod, Map<String, HttpHandler>>();
 
+	private Map<String, String> defaultMimeTypes = new HashMap<String, String>() {
+		private static final long serialVersionUID = 1L;
+		{
+			put("txt", "text/plain");
+			put("css", "text/css");
+			put("csv", "text/csv");
+			put("htm", "text/html");
+			put("html", "text/html");
+			put("xml", "text/xml");
+			put("js", "text/javascript"); // Technically it should be
+											// application/javascript (RFC
+											// 4329), but IE8 struggles with
+											// that
+			put("xhtml", "application/xhtml+xml");
+			put("json", "application/json");
+			put("pdf", "application/pdf");
+			put("zip", "application/zip");
+			put("tar", "application/x-tar");
+			put("gif", "image/gif");
+			put("jpeg", "image/jpeg");
+			put("jpg", "image/jpeg");
+			put("tiff", "image/tiff");
+			put("tif", "image/tiff");
+			put("png", "image/png");
+			put("svg", "image/svg+xml");
+			put("ico", "image/x-icon");
+			put("mp3", "audio/mpeg");
+		}
+	};
+	
 	private Set<String> urlExts = new HashSet<String>() {
 		private static final long serialVersionUID = 1L;
 	{
@@ -99,19 +126,7 @@ public class HttpDispatcher {
 			throw new IllegalArgumentException("Duplicate path mapping. method [" + method + "], path [" + path + "]");
 		}
 
-		if (method == HttpMethod.GET) {
-			getHandlers.put(path, handler);
-		} else if (method == HttpMethod.POST) {
-			postHandlers.put(path, handler);
-		} else if (method == HttpMethod.PUT) {
-			putHandlers.put(path, handler);
-		} else if (method == HttpMethod.DELETE) {
-			deleteHandlers.put(path, handler);
-		} else if (method == HttpMethod.HEAD) {
-			headHandlers.put(path, handler);
-		} else {
-			throw new IllegalArgumentException("Can't support mapping for method [" + method + "]");
-		}
+		putHandler(method, path, handler);
 	}
 	
 	public void addUrlExt(String ext) {
@@ -119,19 +134,21 @@ public class HttpDispatcher {
 	}
 	
 	private Map<String, HttpHandler> getHandlers(HttpMethod method) {
-		if (method == HttpMethod.GET) {
-			return getHandlers;
-		} else if (method == HttpMethod.POST) {
-			return postHandlers;
-		} else if (method == HttpMethod.PUT) {
-			return putHandlers;
-		} else if (method == HttpMethod.DELETE) {
-			return deleteHandlers;
-		} else if (method == HttpMethod.HEAD) {
-			return headHandlers;
-		} else {
-			return null;
+		Map<String, HttpHandler> h = handlers.get(method);
+		if(h == null) {
+			h = new ConcurrentHashMap<String, HttpHandler>();
+			handlers.put(method, h);
 		}
+		return h;
+	}
+	
+	private void putHandler(HttpMethod method, String path, HttpHandler handler) {
+		Map<String, HttpHandler> h = handlers.get(method);
+		if(h == null) {
+			h = new ConcurrentHashMap<String, HttpHandler>();
+			handlers.put(method, h);
+		}
+		h.put(path, handler);
 	}
 
 	private String removePathExtension(String path) {
@@ -151,37 +168,7 @@ public class HttpDispatcher {
 		return extension;
 	}
 
-	private static String guessMimeType(String path) {
-		Map<String, String> defaultMimeTypes = new HashMap<String, String>() {
-			private static final long serialVersionUID = 1L;
-			{
-				put("txt", "text/plain");
-				put("css", "text/css");
-				put("csv", "text/csv");
-				put("htm", "text/html");
-				put("html", "text/html");
-				put("xml", "text/xml");
-				put("js", "text/javascript"); // Technically it should be
-												// application/javascript (RFC
-												// 4329), but IE8 struggles with
-												// that
-				put("xhtml", "application/xhtml+xml");
-				put("json", "application/json");
-				put("pdf", "application/pdf");
-				put("zip", "application/zip");
-				put("tar", "application/x-tar");
-				put("gif", "image/gif");
-				put("jpeg", "image/jpeg");
-				put("jpg", "image/jpeg");
-				put("tiff", "image/tiff");
-				put("tif", "image/tiff");
-				put("png", "image/png");
-				put("svg", "image/svg+xml");
-				put("ico", "image/x-icon");
-				put("mp3", "audio/mpeg");
-			}
-		};
-		
+	private String guessMimeType(String path) {
 		int lastDot = path.lastIndexOf('.');
 		if (lastDot == -1) {
 			return "";

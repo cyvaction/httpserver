@@ -9,7 +9,6 @@ import org.github.httpserver.log.LoggerFactory.LogType;
 import org.github.httpserver.utils.Singleton;
 
 public class Main {
-
 	public static void main(String[] args) {
 		LoggerFactory.setLogType(LogType.CONSOLE);
 		HttpConfig config = new HttpConfig();
