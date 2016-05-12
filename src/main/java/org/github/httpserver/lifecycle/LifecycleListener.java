@@ -18,7 +18,4 @@ public abstract class LifecycleListener {
     	// NOOP
     }
 
-    public void onException(Exception e) {
-    	// NOOP
-    }
 }

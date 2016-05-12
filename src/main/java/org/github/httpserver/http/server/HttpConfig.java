@@ -11,6 +11,10 @@ public class HttpConfig {
 	 */
 	private String urlExt;
 	
+	private int bossThreads;
+	
+	private int workerThreads;
+	
 	public int getPort() {
 		return port;
 	}
@@ -26,5 +30,21 @@ public class HttpConfig {
 	public void setUrlExt(String urlExt) {
 		this.urlExt = urlExt;
 	}
-	
+
+	public int getBossThreads() {
+		return bossThreads;
+	}
+
+	public void setBossThreads(int bossThreads) {
+		this.bossThreads = bossThreads;
+	}
+
+	public int getWorkerThreads() {
+		return workerThreads;
+	}
+
+	public void setWorkerThreads(int workerThreads) {
+		this.workerThreads = workerThreads;
+	}
+
 }

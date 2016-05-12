@@ -6,6 +6,7 @@ import java.util.Date;
 
 import org.github.httpserver.log.LogLevel;
 import org.github.httpserver.log.Logger;
+import org.github.httpserver.utils.ExceptionUtils;
 import org.github.httpserver.utils.StringUtils;
 
 public class SimpleLogger implements Logger {
@@ -28,14 +29,14 @@ public class SimpleLogger implements Logger {
 
 	@Override
 	public void debug(Throwable t) {
-		t.printStackTrace();
+		System.out.println(ExceptionUtils.getStackTrace(t));
 	}
 
 	@Override
 	public void debug(Throwable t, String format, Object... arguments) {
 		String s = format(name, LogLevel.DEBUG, StringUtils.format(format, arguments));
 		System.out.println(s);
-		t.printStackTrace();
+		System.out.println(ExceptionUtils.getStackTrace(t));
 	}
 
 	@Override
@@ -46,14 +47,14 @@ public class SimpleLogger implements Logger {
 
 	@Override
 	public void info(Throwable t) {
-		t.printStackTrace();
+		System.out.println(ExceptionUtils.getStackTrace(t));
 	}
 
 	@Override
 	public void info(Throwable t, String format, Object... arguments) {
 		String s = format(name, LogLevel.INFO, StringUtils.format(format, arguments));
 		System.out.println(s);
-		t.printStackTrace();
+		System.out.println(ExceptionUtils.getStackTrace(t));
 	}
 
 	@Override
@@ -64,14 +65,14 @@ public class SimpleLogger implements Logger {
 
 	@Override
 	public void warn(Throwable t) {
-		t.printStackTrace();
+		System.out.println(ExceptionUtils.getStackTrace(t));
 	}
 
 	@Override
 	public void warn(Throwable t, String format, Object... arguments) {
 		String s = format(name, LogLevel.WARN, StringUtils.format(format, arguments));
 		System.out.println(s);
-		t.printStackTrace();
+		System.out.println(ExceptionUtils.getStackTrace(t));
 	}
 
 	@Override
@@ -82,14 +83,14 @@ public class SimpleLogger implements Logger {
 
 	@Override
 	public void error(Throwable t) {
-		t.printStackTrace();
+		System.out.println(ExceptionUtils.getStackTrace(t));
 	}
 
 	@Override
 	public void error(Throwable t, String format, Object... arguments) {
 		String s = format(name, LogLevel.ERROR, StringUtils.format(format, arguments));
 		System.out.println(s);
-		t.printStackTrace();
+		System.out.println(ExceptionUtils.getStackTrace(t));
 	}
 
 	private String format(String name, LogLevel level, String log) {

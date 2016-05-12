@@ -3,6 +3,7 @@ package org.github.httpserver.http.server;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,11 +13,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.github.httpserver.http.Consts;
-import org.github.httpserver.http.HttpHandler;
 import org.github.httpserver.http.HttpMethod;
 import org.github.httpserver.http.HttpRequest;
 import org.github.httpserver.http.HttpResponse;
 import org.github.httpserver.http.HttpStatus;
+import org.github.httpserver.http.annotation.HttpController;
+import org.github.httpserver.http.annotation.HttpMapping;
+import org.github.httpserver.utils.ClassUtils;
 import org.github.httpserver.utils.IoUtils;
 import org.github.httpserver.utils.JsonUtils;
 import org.github.httpserver.utils.StringUtils;
@@ -28,7 +31,7 @@ public class HttpDispatcher {
 
 	// Map<method, Map<path, handler>>
 	private Map<HttpMethod, Map<String, HttpHandler>> handlers = new ConcurrentHashMap<HttpMethod, Map<String, HttpHandler>>();
-
+	
 	private Map<String, String> defaultMimeTypes = new HashMap<String, String>() {
 		private static final long serialVersionUID = 1L;
 		{
@@ -67,6 +70,10 @@ public class HttpDispatcher {
 		add("action");
 	}};
 	
+	public HttpDispatcher() {
+		scanAndRegisterHandlers();
+	}
+	
 	public void dispatchRequest(HttpRequest request, HttpResponse response) throws IOException {
 		String path = request.getPath();
 		if ("/".equals(path)) {
@@ -91,8 +98,10 @@ public class HttpDispatcher {
 			}
 			
 			HttpHandler handler = handlers.get(mappedPath);
-			Object bodyObj = handler.handleRequest(request);
-			response.setBody(JsonUtils.toJsonString(bodyObj).getBytes(Consts.UTF_8));
+			Object bodyObj = handler.invoke(request, response);
+			if(bodyObj != null) {
+				response.setBody(JsonUtils.toJsonString(bodyObj).getBytes(Consts.UTF_8));
+			}
 			response.setContentType(Consts.ContentTypes.JSON_UTF_8);
 		} else {
 			InputStream in = HttpDispatcher.class.getResourceAsStream(DEFAULT_ROOT_PATH + path);
@@ -150,7 +159,7 @@ public class HttpDispatcher {
 		}
 		h.put(path, handler);
 	}
-
+	
 	private String removePathExtension(String path) {
 		int lastDot = path.lastIndexOf('.');
 		if (lastDot == -1) {
@@ -181,4 +190,26 @@ public class HttpDispatcher {
 		return mimeType;
 	}
 	
+	private void scanAndRegisterHandlers() {
+		Set<Class<?>> clazzes = ClassUtils.scanPackageByAnnotation(HttpController.class);
+		for(Class<?> clazz: clazzes) {
+			Method[] methods = clazz.getMethods();
+			for(Method method : methods) {
+				HttpMapping httpMapping = method.getAnnotation(HttpMapping.class);
+				if(httpMapping == null) {
+					continue;
+				}
+				HttpMethod[] ms = httpMapping.method();
+				String[] paths = httpMapping.path();
+				for(HttpMethod m : ms) {
+					for(String path : paths) {
+						Object obj = ClassUtils.newInstance(clazz);
+						HttpHandler handler = new HttpHandler(obj, method);
+						registerHandler(m, path, handler);
+					}
+				}
+			}
+		}
+	}
 }
+ 
